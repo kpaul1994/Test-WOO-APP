@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { DEFAULT_STORE_CONFIG } from '../config/env';
 import {
   CartItem,
   CustomerSession,
@@ -148,6 +149,13 @@ export async function loadSavedStores(): Promise<StoreConfig[]> {
       });
     }
   }
+
+  // Pre-seed default NextEcom WooCommerce store if no stores are saved
+  if (results.length === 0 && DEFAULT_STORE_CONFIG) {
+    await saveStoreConfig(DEFAULT_STORE_CONFIG);
+    return [DEFAULT_STORE_CONFIG];
+  }
+
   if (dirty) {
     await AsyncStorage.setItem(KEY_SAVED_STORES_META, JSON.stringify(metas));
   }
@@ -187,7 +195,13 @@ export async function setActiveStoreUrl(storeUrl: string | null): Promise<void> 
 }
 
 export async function getActiveStoreUrl(): Promise<string | null> {
-  return AsyncStorage.getItem(KEY_ACTIVE_STORE_URL);
+  const url = await AsyncStorage.getItem(KEY_ACTIVE_STORE_URL);
+  if (url) return url;
+  if (DEFAULT_STORE_CONFIG) {
+    await AsyncStorage.setItem(KEY_ACTIVE_STORE_URL, DEFAULT_STORE_CONFIG.storeUrl);
+    return DEFAULT_STORE_CONFIG.storeUrl;
+  }
+  return null;
 }
 
 export async function deleteSavedStore(storeUrl: string): Promise<StoreConfig[]> {

@@ -123,17 +123,14 @@ const RootNavigator: React.FC = () => {
   return (
     <NavigationContainer theme={navTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!activeStore ? (
-          <Stack.Screen name="ConnectStore" component={ConnectStoreScreen} />
-        ) : (
-          <>
-            <Stack.Screen name="MainTabs" component={MainTabs} />
-            <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-            <Stack.Screen name="Checkout" component={CheckoutScreen} />
-            <Stack.Screen name="ConnectStore" component={ConnectStoreScreen} />
-          </>
-        )}
+      <Stack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName={activeStore ? 'MainTabs' : 'ConnectStore'}
+      >
+        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+        <Stack.Screen name="Checkout" component={CheckoutScreen} />
+        <Stack.Screen name="ConnectStore" component={ConnectStoreScreen} />
       </Stack.Navigator>
       <ToastBanner />
     </NavigationContainer>
