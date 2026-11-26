@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Mercato",
+    "slug": "mercato-woocommerce",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/img_app_icon.jpg",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/img_app_icon.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#181615"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aistudio.mercato.rn"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/img_app_icon.jpg",
+        "backgroundColor": "#181615"
+      },
+      "package": "com.aistudio.mercato.rn"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-secure-store"
+    ]
+  }
+}
