@@ -119,7 +119,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let mounted = true;
     (async () => {
       try {
-        const [stores, activeUrl, cart, wishlist, theme, hideDemo] = await Promise.all([
+        let [stores, activeUrl, cart, wishlist, theme, hideDemo] = await Promise.all([
           storage.loadSavedStores(),
           storage.getActiveStoreUrl(),
           storage.loadAllCartItems(),
@@ -129,6 +129,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ]);
 
         if (!mounted) return;
+
+        // Auto-seed default store if none is connected
+        if (stores.length === 0 && ENV.DEFAULT_STORE && ENV.DEFAULT_STORE.storeUrl) {
+          try {
+            await storage.saveStoreConfig(ENV.DEFAULT_STORE);
+            stores = [ENV.DEFAULT_STORE];
+            activeUrl = ENV.DEFAULT_STORE.storeUrl;
+          } catch (e) {
+            console.warn('Failed to seed default store config', e);
+          }
+        }
         const sanitizedStores = stores.map((s) => ({
           ...s,
           storeName:

@@ -26,6 +26,57 @@ import { decodeEntities } from '../utils/htmlParser';
 
 const STORE_BANNER = require('../../assets/img_store_banner.jpg');
 
+const LiveCountdownBadge: React.FC<{
+  initialTimerStr?: string;
+  color: string;
+  bgColor: string;
+}> = ({ initialTimerStr = '04h 30m 15s', color, bgColor }) => {
+  const parseSeconds = (str: string): number => {
+    let total = 0;
+    const h = str.match(/(\d+)\s*h/i);
+    const m = str.match(/(\d+)\s*m/i);
+    const s = str.match(/(\d+)\s*s/i);
+
+    if (h) total += parseInt(h[1], 10) * 3600;
+    if (m) total += parseInt(m[1], 10) * 60;
+    if (s) total += parseInt(s[1], 10);
+
+    if (!h && !m && !s && str.includes(':')) {
+      const parts = str.split(':').map((p) => parseInt(p, 10) || 0);
+      if (parts.length === 3) total = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      else if (parts.length === 2) total = parts[0] * 60 + parts[1];
+    }
+
+    return total > 0 ? total : 4 * 3600 + 30 * 60 + 15;
+  };
+
+  const [remaining, setRemaining] = useState(() => parseSeconds(initialTimerStr));
+
+  useEffect(() => {
+    setRemaining(parseSeconds(initialTimerStr));
+  }, [initialTimerStr]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRemaining((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const hours = String(Math.floor(remaining / 3600)).padStart(2, '0');
+  const minutes = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0');
+  const seconds = String(remaining % 60).padStart(2, '0');
+
+  return (
+    <View style={[styles.timerBadge, { backgroundColor: bgColor }]}>
+      <Ionicons name="time-outline" size={13} color={color} />
+      <Text style={[styles.timerText, { color, fontWeight: '700' }]}>
+        {hours}h {minutes}m {seconds}s
+      </Text>
+    </View>
+  );
+};
+
 type HomeNavProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Home'>,
   NativeStackNavigationProp<RootStackParamList>
@@ -545,11 +596,25 @@ export const HomeScreen: React.FC = () => {
 
             // 4. FLASH SALE WITH COUNTDOWN TIMER
             if (sec.type === 'flash_sale' || sec.type === 'special_offers') {
-              const saleProducts = onSale.length > 0 ? onSale : latest.slice(0, 4);
+              const allCatalog = Array.from(
+                new Map([...latest, ...featured, ...onSale].map((p) => [p.id, p])).values()
+              );
+              const customFlashProducts =
+                sec.product_ids && Array.isArray(sec.product_ids) && sec.product_ids.length > 0
+                  ? (sec.product_ids
+                      .map((id: any) => allCatalog.find((p) => p.id === Number(id)))
+                      .filter(Boolean) as WooProduct[])
+                  : [];
+              const saleProducts =
+                customFlashProducts.length > 0
+                  ? customFlashProducts
+                  : onSale.length > 0
+                  ? onSale
+                  : latest.slice(0, 4);
+
               if (saleProducts.length === 0) return null;
               const flashTitle = sec.title || '⚡ Flash Sale - 24 Hours Only';
               const flashSub = sec.subtitle || 'Limited stock deals on trending fashion & accessories';
-              const timerStr = sec.timer || '04h 30m 15s';
 
               return (
                 <View
@@ -569,12 +634,11 @@ export const HomeScreen: React.FC = () => {
                           <Ionicons name="flash" size={12} color="#FFFFFF" />
                           <Text style={styles.flashPillText}>LIMITED DEAL</Text>
                         </View>
-                        <View style={[styles.timerBadge, { backgroundColor: colors.surfaceVariant }]}>
-                          <Ionicons name="time-outline" size={13} color={colors.secondary} />
-                          <Text style={[styles.timerText, { color: colors.secondary, fontWeight: '700' }]}>
-                            {timerStr}
-                          </Text>
-                        </View>
+                        <LiveCountdownBadge
+                          initialTimerStr={sec.timer || '04h 30m 15s'}
+                          color={colors.secondary}
+                          bgColor={colors.surfaceVariant}
+                        />
                       </View>
                       <Text style={[styles.flashTitle, { color: colors.onSurface }]}>
                         {flashTitle}

@@ -31,6 +31,7 @@ export interface MobileSectionConfig {
   source?: string;
   limit?: number;
   items?: TrustBadgeItem[];
+  product_ids?: (number | string)[];
 }
 
 export interface MobileConfigResponse {
