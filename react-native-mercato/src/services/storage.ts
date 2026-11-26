@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import {
@@ -46,13 +47,70 @@ function toSafeStoreKey(prefix: string, storeUrl: string): string {
   return `${prefix}_${slug}_${(hash >>> 0).toString(36)}`;
 }
 
+const isWeb = Platform.OS === 'web' || typeof window !== 'undefined';
+
+async function canUseSecureStore(): Promise<boolean> {
+  if (isWeb) return false;
+  try {
+    return typeof SecureStore.isAvailableAsync === 'function' && (await SecureStore.isAvailableAsync());
+  } catch {
+    return false;
+  }
+}
+
+async function safeSetSecureItem(key: string, value: string): Promise<void> {
+  try {
+    const available = await canUseSecureStore();
+    if (available) {
+      await SecureStore.setItemAsync(key, value);
+      return;
+    }
+  } catch {
+    // fallback below
+  }
+  await AsyncStorage.setItem(`__sec_${key}`, value);
+}
+
+async function safeGetSecureItem(key: string): Promise<string | null> {
+  try {
+    const available = await canUseSecureStore();
+    if (available) {
+      const val = await SecureStore.getItemAsync(key);
+      if (val !== null) return val;
+    }
+  } catch {
+    // fallback below
+  }
+  try {
+    return await AsyncStorage.getItem(`__sec_${key}`);
+  } catch {
+    return null;
+  }
+}
+
+async function safeDeleteSecureItem(key: string): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(`__sec_${key}`);
+  } catch {
+    // ignore
+  }
+  try {
+    const available = await canUseSecureStore();
+    if (available) {
+      await SecureStore.deleteItemAsync(key);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 async function setSecureJson<T>(key: string, value: T): Promise<void> {
-  await SecureStore.setItemAsync(key, JSON.stringify(value));
+  await safeSetSecureItem(key, JSON.stringify(value));
 }
 
 async function getSecureJson<T>(key: string): Promise<T | null> {
   try {
-    const raw = await SecureStore.getItemAsync(key);
+    const raw = await safeGetSecureItem(key);
     if (!raw) return null;
     return JSON.parse(raw) as T;
   } catch {
@@ -72,8 +130,13 @@ async function getAsyncJson<T>(key: string, fallback: T): Promise<T> {
 
 export async function loadSavedStores(): Promise<StoreConfig[]> {
   const metas = await getAsyncJson<StoreMetadata[]>(KEY_SAVED_STORES_META, []);
+  let dirty = false;
   const results: StoreConfig[] = [];
   for (const meta of metas) {
+    if (!meta.storeName || meta.storeName.trim().toLowerCase() === 'my boutique') {
+      meta.storeName = 'NextEcom Store';
+      dirty = true;
+    }
     const secrets = await getSecureJson<StoreSecrets>(
       toSafeStoreKey('mercato_store_sec', meta.storeUrl),
     );
@@ -84,6 +147,9 @@ export async function loadSavedStores(): Promise<StoreConfig[]> {
         consumerSecret: secrets.consumerSecret,
       });
     }
+  }
+  if (dirty) {
+    await AsyncStorage.setItem(KEY_SAVED_STORES_META, JSON.stringify(metas));
   }
   return results.sort((a, b) => b.lastSyncedAt - a.lastSyncedAt);
 }
@@ -125,8 +191,8 @@ export async function getActiveStoreUrl(): Promise<string | null> {
 }
 
 export async function deleteSavedStore(storeUrl: string): Promise<StoreConfig[]> {
-  await SecureStore.deleteItemAsync(toSafeStoreKey('mercato_store_sec', storeUrl));
-  await SecureStore.deleteItemAsync(toSafeStoreKey('mercato_jwt', storeUrl));
+  await safeDeleteSecureItem(toSafeStoreKey('mercato_store_sec', storeUrl));
+  await safeDeleteSecureItem(toSafeStoreKey('mercato_jwt', storeUrl));
 
   const metas = await getAsyncJson<StoreMetadata[]>(KEY_SAVED_STORES_META, []);
   const remaining = metas.filter((m) => m.storeUrl !== storeUrl);
@@ -150,7 +216,7 @@ export async function loadCustomerSession(storeUrl: string): Promise<CustomerSes
   );
   const sessionMeta = sessions[storeUrl];
   if (!sessionMeta) return null;
-  const jwt = (await SecureStore.getItemAsync(toSafeStoreKey('mercato_jwt', storeUrl))) || '';
+  const jwt = (await safeGetSecureItem(toSafeStoreKey('mercato_jwt', storeUrl))) || '';
   return {
     ...sessionMeta,
     jwtToken: jwt,
@@ -160,9 +226,9 @@ export async function loadCustomerSession(storeUrl: string): Promise<CustomerSes
 export async function saveCustomerSession(session: CustomerSession): Promise<void> {
   const { jwtToken, ...meta } = session;
   if (jwtToken) {
-    await SecureStore.setItemAsync(toSafeStoreKey('mercato_jwt', session.storeUrl), jwtToken);
+    await safeSetSecureItem(toSafeStoreKey('mercato_jwt', session.storeUrl), jwtToken);
   } else {
-    await SecureStore.deleteItemAsync(toSafeStoreKey('mercato_jwt', session.storeUrl));
+    await safeDeleteSecureItem(toSafeStoreKey('mercato_jwt', session.storeUrl));
   }
   const sessions = await getAsyncJson<Record<string, Omit<CustomerSession, 'jwtToken'>>>(
     KEY_CUSTOMER_SESSIONS,
@@ -173,7 +239,7 @@ export async function saveCustomerSession(session: CustomerSession): Promise<voi
 }
 
 export async function clearCustomerSession(storeUrl: string): Promise<void> {
-  await SecureStore.deleteItemAsync(toSafeStoreKey('mercato_jwt', storeUrl));
+  await safeDeleteSecureItem(toSafeStoreKey('mercato_jwt', storeUrl));
   const sessions = await getAsyncJson<Record<string, Omit<CustomerSession, 'jwtToken'>>>(
     KEY_CUSTOMER_SESSIONS,
     {},

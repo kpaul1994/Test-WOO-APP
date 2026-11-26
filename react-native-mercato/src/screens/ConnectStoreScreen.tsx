@@ -100,7 +100,7 @@ export const ConnectStoreScreen: React.FC = () => {
                   <Ionicons name="storefront-outline" size={14} color="#FAF8F5" />
                   <Text style={styles.pillBadgeText}>WOOCOMMERCE READY</Text>
                 </View>
-                <Text style={styles.heroTitle}>Mercato</Text>
+                <Text style={styles.heroTitle}>cwgapp</Text>
                 <Text style={styles.heroSub}>
                   Connect any WooCommerce store URL & REST keys to launch a live native storefront.
                 </Text>
@@ -146,7 +146,9 @@ export const ConnectStoreScreen: React.FC = () => {
                             numberOfLines={1}
                             style={[styles.savedName, { color: colors.onSurface }]}
                           >
-                            {store.storeName}
+                            {!store.storeName || store.storeName.trim().toLowerCase() === 'my boutique'
+                              ? 'NextEcom Store'
+                              : store.storeName}
                           </Text>
                           <Text
                             numberOfLines={1}
@@ -302,7 +304,7 @@ export const ConnectStoreScreen: React.FC = () => {
                 <TextInput
                   value={customName}
                   onChangeText={setCustomName}
-                  placeholder="My Boutique"
+                  placeholder="e.g. NextEcom Store"
                   placeholderTextColor={colors.onSurfaceVariant}
                   style={[
                     styles.input,
@@ -371,7 +373,7 @@ export const ConnectStoreScreen: React.FC = () => {
             </Text>
             <Text style={[styles.modalBody, { color: colors.onSurfaceVariant }]}>
               1. In WordPress Admin, open WooCommerce → Settings → Advanced → REST API.{'\n\n'}
-              2. Click "Add key", enter a description (e.g. Mercato Mobile), and set Permissions to Read/Write so cart checkout, reviews, and customer sign-up work.{'\n\n'}
+              2. Click "Add key", enter a description (e.g. cwgapp Mobile), and set Permissions to Read/Write so cart checkout, reviews, and customer sign-up work.{'\n\n'}
               3. Ensure Permalinks (Settings → Permalinks) are set to Post name or any pretty structure so /wp-json/wc/v3/ routes resolve cleanly.{'\n\n'}
               4. For WordPress customer login, install "JWT Authentication for WP REST API" or use WordPress Application Passwords.
             </Text>

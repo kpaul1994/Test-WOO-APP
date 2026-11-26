@@ -129,11 +129,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ]);
 
         if (!mounted) return;
-        setSavedStores(stores);
+        const sanitizedStores = stores.map((s) => ({
+          ...s,
+          storeName:
+            !s.storeName || s.storeName.trim().toLowerCase() === 'my boutique'
+              ? 'NextEcom Store'
+              : s.storeName,
+        }));
+        setSavedStores(sanitizedStores);
         const resolvedUrl =
-          activeUrl && stores.some((s) => s.storeUrl === activeUrl)
+          activeUrl && sanitizedStores.some((s) => s.storeUrl === activeUrl)
             ? activeUrl
-            : stores[0]?.storeUrl || null;
+            : sanitizedStores[0]?.storeUrl || null;
         setActiveStoreUrlState(resolvedUrl);
         setAllCartItems(cart);
         setAllWishlistItems(wishlist);

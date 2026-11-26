@@ -13,7 +13,9 @@ import {
   WooProductVariation,
 } from '../types/woo';
 import { decodeEntities, htmlToPlainText } from '../utils/htmlParser';
+import { normalizeStateCode } from '../utils/locationData';
 import { validateAndNormalizeStoreUrl } from '../utils/urlValidator';
+import { MobileConfigResponse, WpHomepageSections, WpThemeOptions } from '../types/mobileConfig';
 
 const REQUEST_TIMEOUT_MS = 25000;
 
@@ -128,7 +130,14 @@ async function fetchJson<T>(
     }
 
     if (!response.ok) {
+      let detailMsg = '';
+      if (parsed?.data?.params && typeof parsed.data.params === 'object') {
+        detailMsg = Object.entries(parsed.data.params)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(', ');
+      }
       const serverMsg =
+        detailMsg ||
         parsed?.message ||
         parsed?.data?.message ||
         (response.status === 401
@@ -199,6 +208,9 @@ export async function testAndConnectStore(params: {
 
   // 3. Fetch WordPress site name & tagline
   let siteTitle = params.customStoreName?.trim() || '';
+  if (siteTitle.toLowerCase() === 'my boutique') {
+    siteTitle = '';
+  }
   let tagline = 'Connected WooCommerce Store';
   try {
     const rootInfo = await fetchJson<{ name?: string; description?: string }>(
@@ -214,8 +226,8 @@ export async function testAndConnectStore(params: {
     // Ignore public root lookup failure
   }
 
-  if (!siteTitle) {
-    siteTitle = validation.host.replace(/^www\./i, '');
+  if (!siteTitle || siteTitle.toLowerCase() === 'my boutique') {
+    siteTitle = validation.host.replace(/^www\./i, '') || 'NextEcom Store';
   }
 
   return {
@@ -275,6 +287,62 @@ export async function fetchHomeFeed(store: StoreConfig): Promise<{
   ]);
 
   return { categories, featured, onSale, latest };
+}
+
+export async function fetchMobileConfig(store: StoreConfig): Promise<MobileConfigResponse | null> {
+  try {
+    return await fetchJson<MobileConfigResponse>(
+      buildUrl(store.storeUrl, '/wp-json/nextecom/v1/mobile-config'),
+    );
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchWpHomepageSections(store: StoreConfig): Promise<WpHomepageSections | null> {
+  try {
+    return await fetchJson<WpHomepageSections>(
+      buildUrl(store.storeUrl, '/wp-json/nextecom/v1/homepage-sections'),
+    );
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchThemeOptions(store: StoreConfig): Promise<WpThemeOptions | null> {
+  try {
+    return await fetchJson<WpThemeOptions>(
+      buildUrl(store.storeUrl, '/wp-json/nextecom/v1/theme-options'),
+    );
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchStoreLogo(store: StoreConfig): Promise<string> {
+  try {
+    // 1. Check root site_icon_url
+    const rootInfo = await fetchJson<{ site_icon_url?: string }>(
+      buildUrl(store.storeUrl, '/wp-json/'),
+    );
+    if (rootInfo?.site_icon_url) {
+      return rootInfo.site_icon_url;
+    }
+
+    // 2. Query WordPress media library for uploaded logo
+    const media = await fetchJson<Array<{ source_url?: string }>>(
+      buildUrl(store.storeUrl, '/wp-json/wp/v2/media', {
+        search: 'logo',
+        per_page: 1,
+      }),
+    );
+    if (media?.[0]?.source_url) {
+      return media[0].source_url;
+    }
+  } catch {
+    // Ignore network / media lookup failure
+  }
+  return '';
 }
 
 export async function fetchCategories(store: StoreConfig): Promise<WooProductCategory[]> {
@@ -453,14 +521,17 @@ export async function createOrder(
     lineItems: { product_id: number; variation_id?: number; quantity: number }[];
   },
 ): Promise<WooOrderResponse> {
+  const countryCode = payload.billing.country.trim().toUpperCase() || 'IN';
+  const stateCode = normalizeStateCode(countryCode, payload.billing.state.trim());
+
   const addrPayload = {
     first_name: payload.billing.firstName.trim(),
     last_name: payload.billing.lastName.trim(),
     address_1: payload.billing.address1.trim(),
     city: payload.billing.city.trim(),
-    state: payload.billing.state.trim(),
+    state: stateCode,
     postcode: payload.billing.postcode.trim(),
-    country: payload.billing.country.trim().toUpperCase() || 'US',
+    country: countryCode,
     email: payload.email.trim(),
     phone: payload.billing.phone.trim(),
   };
