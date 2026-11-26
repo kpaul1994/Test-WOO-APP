@@ -117,6 +117,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     let mounted = true;
+
+    // Safety timeout: ensure bootstrapping NEVER hangs indefinitely
+    const safetyTimer = setTimeout(() => {
+      if (mounted) {
+        setBootstrapping(false);
+      }
+    }, 2500);
+
     (async () => {
       try {
         let [stores, activeUrl, cart, wishlist, theme, hideDemo] = await Promise.all([
@@ -132,13 +140,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         // Auto-seed default store if none is connected
         if (stores.length === 0 && ENV.DEFAULT_STORE && ENV.DEFAULT_STORE.storeUrl) {
-          try {
-            await storage.saveStoreConfig(ENV.DEFAULT_STORE);
-            stores = [ENV.DEFAULT_STORE];
-            activeUrl = ENV.DEFAULT_STORE.storeUrl;
-          } catch (e) {
-            console.warn('Failed to seed default store config', e);
-          }
+          stores = [ENV.DEFAULT_STORE];
+          activeUrl = ENV.DEFAULT_STORE.storeUrl;
+          storage.saveStoreConfig(ENV.DEFAULT_STORE).catch(() => {});
         }
         const sanitizedStores = stores.map((s) => ({
           ...s,
@@ -168,12 +172,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setRecentOrderIds(orders);
           }
         }
+      } catch (err) {
+        console.warn('Bootstrapping error:', err);
       } finally {
-        if (mounted) setBootstrapping(false);
+        if (mounted) {
+          clearTimeout(safetyTimer);
+          setBootstrapping(false);
+        }
       }
     })();
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
     };
   }, []);
 

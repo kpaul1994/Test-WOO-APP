@@ -51,10 +51,20 @@ function toSafeStoreKey(prefix: string, storeUrl: string): string {
 
 const isWeb = Platform.OS === 'web' || typeof window !== 'undefined';
 
+const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+
 async function canUseSecureStore(): Promise<boolean> {
   if (isWeb) return false;
   try {
-    return typeof SecureStore.isAvailableAsync === 'function' && (await SecureStore.isAvailableAsync());
+    return await withTimeout(
+      typeof SecureStore.isAvailableAsync === 'function' ? SecureStore.isAvailableAsync() : Promise.resolve(false),
+      500,
+      false,
+    );
   } catch {
     return false;
   }
@@ -64,27 +74,31 @@ async function safeSetSecureItem(key: string, value: string): Promise<void> {
   try {
     const available = await canUseSecureStore();
     if (available) {
-      await SecureStore.setItemAsync(key, value);
+      await withTimeout(SecureStore.setItemAsync(key, value), 800, undefined);
       return;
     }
   } catch {
     // fallback below
   }
-  await AsyncStorage.setItem(`__sec_${key}`, value);
+  try {
+    await withTimeout(AsyncStorage.setItem(`__sec_${key}`, value), 800, undefined);
+  } catch {
+    // ignore
+  }
 }
 
 async function safeGetSecureItem(key: string): Promise<string | null> {
   try {
     const available = await canUseSecureStore();
     if (available) {
-      const val = await SecureStore.getItemAsync(key);
+      const val = await withTimeout(SecureStore.getItemAsync(key), 800, null);
       if (val !== null) return val;
     }
   } catch {
     // fallback below
   }
   try {
-    return await AsyncStorage.getItem(`__sec_${key}`);
+    return await withTimeout(AsyncStorage.getItem(`__sec_${key}`), 800, null);
   } catch {
     return null;
   }
@@ -153,7 +167,6 @@ export async function loadSavedStores(): Promise<StoreConfig[]> {
 
   // Pre-seed default NextEcom WooCommerce store if no stores are saved
   if (results.length === 0 && DEFAULT_STORE_CONFIG) {
-    await saveStoreConfig(DEFAULT_STORE_CONFIG);
     return [DEFAULT_STORE_CONFIG];
   }
 
@@ -184,7 +197,11 @@ export async function saveStoreConfig(config: StoreConfig): Promise<StoreConfig[
   ];
   await AsyncStorage.setItem(KEY_SAVED_STORES_META, JSON.stringify(updatedMetas));
   await AsyncStorage.setItem(KEY_ACTIVE_STORE_URL, config.storeUrl);
-  return loadSavedStores();
+  return updatedMetas.map((m) => ({
+    ...m,
+    consumerKey: m.storeUrl === config.storeUrl ? config.consumerKey : '',
+    consumerSecret: m.storeUrl === config.storeUrl ? config.consumerSecret : '',
+  }));
 }
 
 export async function setActiveStoreUrl(storeUrl: string | null): Promise<void> {
