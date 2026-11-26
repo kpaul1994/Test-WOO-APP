@@ -60,17 +60,22 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 async function canUseSecureStore(): Promise<boolean> {
   if (isWeb) return false;
   try {
-    return await withTimeout(
-      typeof SecureStore.isAvailableAsync === 'function' ? SecureStore.isAvailableAsync() : Promise.resolve(false),
-      500,
-      false,
-    );
+    if (typeof SecureStore.isAvailableAsync !== 'function') return false;
+    return await withTimeout(SecureStore.isAvailableAsync(), 500, false);
   } catch {
     return false;
   }
 }
 
 async function safeSetSecureItem(key: string, value: string): Promise<void> {
+  if (isWeb) {
+    try {
+      await AsyncStorage.setItem(`__sec_${key}`, value);
+    } catch {
+      // ignore
+    }
+    return;
+  }
   try {
     const available = await canUseSecureStore();
     if (available) {
@@ -88,6 +93,13 @@ async function safeSetSecureItem(key: string, value: string): Promise<void> {
 }
 
 async function safeGetSecureItem(key: string): Promise<string | null> {
+  if (isWeb) {
+    try {
+      return await AsyncStorage.getItem(`__sec_${key}`);
+    } catch {
+      return null;
+    }
+  }
   try {
     const available = await canUseSecureStore();
     if (available) {
@@ -110,6 +122,7 @@ async function safeDeleteSecureItem(key: string): Promise<void> {
   } catch {
     // ignore
   }
+  if (isWeb) return;
   try {
     const available = await canUseSecureStore();
     if (available) {

@@ -2,7 +2,7 @@
   "expo": {
     "name": "NextEcom",
     "slug": "nextecom",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/img_app_icon.jpg",
     "userInterfaceStyle": "automatic",
@@ -21,7 +21,8 @@
         "foregroundImage": "./assets/img_app_icon.jpg",
         "backgroundColor": "#181615"
       },
-      "package": "com.nextecom.store"
+      "package": "com.nextecom.store",
+      "versionCode": 2
     },
     "web": {
       "name": "NextEcom",

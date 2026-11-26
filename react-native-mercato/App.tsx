@@ -13,7 +13,7 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -160,6 +160,7 @@ const RootNavigator: React.FC = () => {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
     Outfit_600SemiBold,
     Outfit_700Bold,
     PlusJakartaSans_400Regular,

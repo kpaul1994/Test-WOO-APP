@@ -65,27 +65,28 @@ jobs:
             exit 1
           fi
           echo "Found APK at: $APK_FILE"
-          cp "$APK_FILE" build-output/NextEcom-v1.0.0.apk
-          echo "Copied to build-output/NextEcom-v1.0.0.apk"
-          ls -lh build-output/NextEcom-v1.0.0.apk
+          cp "$APK_FILE" build-output/NextEcom-v1.0.1.apk
+          echo "Copied to build-output/NextEcom-v1.0.1.apk"
+          ls -lh build-output/NextEcom-v1.0.1.apk
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
           name: NextEcom-Android-APK
-          path: build-output/NextEcom-v1.0.0.apk
+          path: build-output/NextEcom-v1.0.1.apk
           retention-days: 30
 
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.0-${{ github.run_number }}
-          name: NextEcom Mobile App v1.0.0 (Build #${{ github.run_number }})
+          tag_name: v1.0.1-${{ github.run_number }}
+          name: NextEcom Mobile App v1.0.1 (Build #${{ github.run_number }})
           body: |
-            ## 📱 NextEcom WooCommerce Mobile Storefront APK
+            ## 📱 NextEcom WooCommerce Mobile Storefront APK (v1.0.1)
             
-            This APK is built automatically from the latest codebase:
+            This release fixes vector icon font loading and includes:
+            - **Complete Ionicons & Vector Icons bundle** (Home, Explore, Bag, Saved, Account, Search, Filters, Wishlist)
             - **Real-time Live Countdown Timer** in Flash Sale section
             - **WooCommerce Catalog Product Selector**
             - **Trust & Guarantee Badges** with dynamic icons, titles, and descriptions
@@ -94,9 +95,9 @@ jobs:
             - **NextEcom Brand Identity**
             
             ### How to Install:
-            1. Download `NextEcom-v1.0.0.apk` below directly to your Android device.
+            1. Download `NextEcom-v1.0.1.apk` below directly to your Android device.
             2. Open the downloaded file to install (allow "Install from unknown sources" if prompted).
             3. Enjoy shopping on **NextEcom**!
-          files: build-output/NextEcom-v1.0.0.apk
+          files: build-output/NextEcom-v1.0.1.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
