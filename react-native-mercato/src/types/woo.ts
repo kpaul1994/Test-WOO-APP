@@ -12,6 +12,8 @@ export interface StoreConfig {
 }
 
 export interface CustomerAddress {
+  id?: string;
+  label?: string;
   firstName: string;
   lastName: string;
   address1: string;
@@ -20,6 +22,7 @@ export interface CustomerAddress {
   postcode: string;
   country: string;
   phone: string;
+  isDefault?: boolean;
 }
 
 export interface CustomerSession {

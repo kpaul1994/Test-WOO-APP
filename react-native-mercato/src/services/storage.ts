@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { DEFAULT_STORE_CONFIG } from '../config/env';
 import {
   CartItem,
+  CustomerAddress,
   CustomerSession,
   StoreConfig,
   ThemeMode,
@@ -260,6 +261,25 @@ export async function clearCustomerSession(storeUrl: string): Promise<void> {
   );
   delete sessions[storeUrl];
   await AsyncStorage.setItem(KEY_CUSTOMER_SESSIONS, JSON.stringify(sessions));
+}
+
+const KEY_CUSTOMER_ADDRESSES_PREFIX = 'mercato_customer_addresses_';
+
+export async function loadCustomerAddresses(
+  storeUrl: string,
+  customerId?: number,
+): Promise<CustomerAddress[]> {
+  const key = `${KEY_CUSTOMER_ADDRESSES_PREFIX}${storeUrl}_${customerId || 'guest'}`;
+  return getAsyncJson<CustomerAddress[]>(key, []);
+}
+
+export async function saveCustomerAddresses(
+  storeUrl: string,
+  addresses: CustomerAddress[],
+  customerId?: number,
+): Promise<void> {
+  const key = `${KEY_CUSTOMER_ADDRESSES_PREFIX}${storeUrl}_${customerId || 'guest'}`;
+  await AsyncStorage.setItem(key, JSON.stringify(addresses));
 }
 
 export async function loadAllCartItems(): Promise<CartItem[]> {
