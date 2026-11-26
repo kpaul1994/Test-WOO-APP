@@ -1,5 +1,5 @@
 {
-  "name": "Mercato",
+  "name": "NextEcom",
   "description": "A modern, WooCommerce-ready mobile storefront app. Connect any WooCommerce store URL and REST API keys to browse products, filter categories, manage cart & wishlist, apply coupons, and place real orders.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

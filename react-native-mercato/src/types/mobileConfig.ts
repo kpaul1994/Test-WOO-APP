@@ -7,6 +7,13 @@ export interface MobileBannerItem {
   target?: string;
 }
 
+export interface TrustBadgeItem {
+  icon: string;
+  title: string;
+  description?: string;
+  sub?: string;
+}
+
 export interface MobileSectionConfig {
   uid: string;
   type: string;
@@ -23,6 +30,7 @@ export interface MobileSectionConfig {
   target?: string;
   source?: string;
   limit?: number;
+  items?: TrustBadgeItem[];
 }
 
 export interface MobileConfigResponse {

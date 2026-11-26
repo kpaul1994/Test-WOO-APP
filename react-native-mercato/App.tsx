@@ -1,5 +1,5 @@
-import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
@@ -91,6 +91,12 @@ const MainTabs: React.FC = () => {
 const RootNavigator: React.FC = () => {
   const { bootstrapping, activeStore, colors, isDark } = useApp();
 
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.title = activeStore?.storeName || 'NextEcom';
+    }
+  }, [activeStore]);
+
   if (bootstrapping) {
     return (
       <View
@@ -121,7 +127,22 @@ const RootNavigator: React.FC = () => {
   };
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer
+      theme={navTheme}
+      documentTitle={{
+        enabled: true,
+        formatter: (_options, route) => {
+          const storeName = activeStore?.storeName || 'NextEcom';
+          if (!route || route.name === 'MainTabs') return storeName;
+          const map: Record<string, string> = {
+            ConnectStore: 'Connect Store',
+            ProductDetail: 'Product Details',
+            Checkout: 'Checkout',
+          };
+          return `${map[route.name] || route.name} • ${storeName}`;
+        },
+      }}
+    >
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack.Navigator
         screenOptions={{ headerShown: false }}

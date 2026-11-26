@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "cwgapp",
-    "slug": "cwgapp",
+    "name": "NextEcom",
+    "slug": "nextecom",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/img_app_icon.jpg",
@@ -14,16 +14,18 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cwgapp.store"
+      "bundleIdentifier": "com.nextecom.store"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/img_app_icon.jpg",
         "backgroundColor": "#181615"
       },
-      "package": "com.cwgapp.store"
+      "package": "com.nextecom.store"
     },
     "web": {
+      "name": "NextEcom",
+      "shortName": "NextEcom",
       "favicon": "./assets/img_app_icon.jpg"
     },
     "plugins": [

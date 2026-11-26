@@ -207,6 +207,19 @@ export const HomeScreen: React.FC = () => {
     },
   ];
 
+  const mapTrustIcon = (iconName?: string): keyof typeof Ionicons.glyphMap => {
+    const icon = (iconName || '').toLowerCase().trim();
+    if (icon.includes('card') || icon.includes('pay')) return 'card-outline';
+    if (icon.includes('refresh') || icon.includes('return') || icon.includes('exchange')) return 'refresh-outline';
+    if (icon.includes('shield') || icon.includes('authentic') || icon.includes('guarantee')) return 'shield-checkmark-outline';
+    if (icon.includes('delivery') || icon.includes('truck') || icon.includes('fast') || icon.includes('shipping') || icon.includes('plane')) return 'paper-plane-outline';
+    if (icon.includes('lock') || icon.includes('secure')) return 'lock-closed-outline';
+    if (icon.includes('medal') || icon.includes('award') || icon.includes('quality') || icon.includes('ribbon')) return 'ribbon-outline';
+    if (icon.includes('star') || icon.includes('vip')) return 'star-outline';
+    if (icon.includes('support') || icon.includes('call') || icon.includes('headset') || icon.includes('help')) return 'headset-outline';
+    return 'shield-checkmark-outline';
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
@@ -765,6 +778,11 @@ export const HomeScreen: React.FC = () => {
             // 9. TRUST & GUARANTEE BADGES
             if (sec.type === 'trust_badges') {
               const trustHeading = sec.title || `Why Shop With ${storeDisplayName}`;
+              const activeTrustItems =
+                sec.items && Array.isArray(sec.items) && sec.items.length > 0
+                  ? sec.items.slice(0, 4)
+                  : trustItems;
+
               return (
                 <View
                   key={sec.uid || `trust_${secIdx}`}
@@ -780,14 +798,18 @@ export const HomeScreen: React.FC = () => {
                     {trustHeading}
                   </Text>
                   <View style={styles.trustGrid}>
-                    {trustItems.map((item, idx) => (
+                    {activeTrustItems.map((item: any, idx: number) => (
                       <View key={idx} style={styles.trustItem}>
-                        <Ionicons name={item.icon} size={20} color={colors.secondary} />
+                        <Ionicons
+                          name={typeof item.icon === 'string' ? mapTrustIcon(item.icon) : (item.icon || 'shield-checkmark-outline')}
+                          size={20}
+                          color={colors.secondary}
+                        />
                         <Text style={[styles.trustTitle, { color: colors.onSurface }]}>
                           {item.title}
                         </Text>
                         <Text style={[styles.trustSub, { color: colors.onSurfaceVariant }]}>
-                          {item.sub}
+                          {item.description || item.sub || item.subtitle || ''}
                         </Text>
                       </View>
                     ))}
