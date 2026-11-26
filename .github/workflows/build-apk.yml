@@ -38,6 +38,15 @@ jobs:
         working-directory: react-native-mercato
         run: npx expo prebuild --platform android --clean
 
+      - name: Bundle Vector and Google Font Assets
+        working-directory: react-native-mercato
+        run: |
+          mkdir -p android/app/src/main/assets/fonts
+          cp node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/*.ttf android/app/src/main/assets/fonts/
+          find node_modules/@expo-google-fonts -name "*.ttf" -exec cp {} android/app/src/main/assets/fonts/ \;
+          echo "Total font assets bundled:"
+          ls android/app/src/main/assets/fonts | wc -l
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
