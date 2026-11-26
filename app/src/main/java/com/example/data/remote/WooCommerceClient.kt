@@ -36,6 +36,15 @@ object WooCommerceClient {
             .build()
     }
 
+    // Separate client for WordPress login endpoints with zero body/header logging
+    private val authOkHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(25, TimeUnit.SECONDS)
+            .writeTimeout(25, TimeUnit.SECONDS)
+            .build()
+    }
+
     @Volatile
     private var cachedKey: String? = null
 
@@ -80,6 +89,16 @@ object WooCommerceClient {
         return api
     }
 
+    fun createWordPressAuthApi(storeUrl: String): WordPressAuthApi {
+        val safeBaseUrl = if (storeUrl.endsWith("/")) storeUrl else "$storeUrl/"
+        return Retrofit.Builder()
+            .baseUrl(safeBaseUrl)
+            .client(authOkHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+            .create(WordPressAuthApi::class.java)
+    }
+
     fun formatNetworkError(error: Throwable): String {
         return when (error) {
             is HttpException -> {
@@ -98,9 +117,9 @@ object WooCommerceClient {
                     }
                 }
                 when (error.code()) {
-                    401 -> wooMessage ?: "Authentication failed (401). Check your Consumer Key and Consumer Secret."
-                    403 -> wooMessage ?: "Access forbidden (403). Ensure your API key has Read/Write permissions."
-                    404 -> wooMessage ?: "WooCommerce REST API v3 endpoint not found (404). Verify permalinks are enabled on WordPress."
+                    401 -> wooMessage ?: "Authentication failed (401). Check your credentials."
+                    403 -> wooMessage ?: "Access forbidden (403). Verify API permissions."
+                    404 -> wooMessage ?: "REST API endpoint not found (404)."
                     else -> wooMessage ?: "Store returned HTTP ${error.code()}. Please try again."
                 }
             }

@@ -152,7 +152,8 @@ class CartRepository(
         billing: WooBillingAddress,
         paymentGateway: WooPaymentGateway,
         couponCode: String?,
-        customerNote: String
+        customerNote: String,
+        customerId: Long? = null
     ): Result<WooOrderResponse> {
         if (items.isEmpty()) {
             return Result.failure(IllegalArgumentException("Your shopping bag is empty."))
@@ -170,6 +171,7 @@ class CartRepository(
                 country = billing.country
             )
             val request = WooOrderCreateRequest(
+                customerId = customerId,
                 paymentMethod = paymentGateway.id,
                 paymentMethodTitle = HtmlTextParser.decodeEntities(paymentGateway.title).ifBlank { paymentGateway.id },
                 setPaid = false,
@@ -198,11 +200,19 @@ class CartRepository(
         }
     }
 
-    suspend fun fetchOrders(config: StoreConfig, orderIds: List<Long>): Result<List<WooOrderResponse>> {
+    suspend fun fetchOrders(
+        config: StoreConfig,
+        customerId: Long? = null,
+        orderIds: List<Long> = emptyList()
+    ): Result<List<WooOrderResponse>> {
         return try {
             val api = WooCommerceClient.createApi(config)
-            val includeParam = orderIds.takeIf { it.isNotEmpty() }?.joinToString(",")
-            val orders = api.getOrders(page = 1, perPage = 20, includeIds = includeParam)
+            val orders = if (customerId != null && customerId > 0L) {
+                api.getOrders(page = 1, perPage = 30, customerId = customerId)
+            } else {
+                val includeParam = orderIds.takeIf { it.isNotEmpty() }?.joinToString(",")
+                api.getOrders(page = 1, perPage = 20, includeIds = includeParam)
+            }
             Result.success(orders)
         } catch (t: Throwable) {
             Result.failure(Exception(WooCommerceClient.formatNetworkError(t), t))

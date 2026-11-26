@@ -300,6 +300,35 @@ class StorefrontViewModel(
         }
     }
 
+    fun submitProductReview(
+        productId: Long,
+        reviewerName: String,
+        reviewerEmail: String,
+        rating: Int,
+        reviewText: String,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        val config = currentConfig ?: return
+        viewModelScope.launch {
+            catalogRepository.submitProductReview(
+                config = config,
+                productId = productId,
+                reviewerName = reviewerName,
+                reviewerEmail = reviewerEmail,
+                rating = rating,
+                reviewText = reviewText
+            ).fold(
+                onSuccess = {
+                    loadProductDetail(productId)
+                    onResult(true, "Thank you! Your review has been submitted.")
+                },
+                onFailure = { err ->
+                    onResult(false, err.message ?: "Unable to submit review.")
+                }
+            )
+        }
+    }
+
     class Factory(
         private val storeRepository: StoreRepository,
         private val catalogRepository: CatalogRepository

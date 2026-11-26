@@ -2,17 +2,26 @@ package com.example.data.remote
 
 import com.example.data.model.WooCoupon
 import com.example.data.model.WooCurrency
+import com.example.data.model.WooCustomer
+import com.example.data.model.WooCustomerCreateRequest
+import com.example.data.model.WooCustomerUpdateRequest
 import com.example.data.model.WooOrderCreateRequest
 import com.example.data.model.WooOrderResponse
 import com.example.data.model.WooPaymentGateway
 import com.example.data.model.WooProduct
 import com.example.data.model.WooProductCategory
 import com.example.data.model.WooProductReview
+import com.example.data.model.WooProductReviewCreateRequest
 import com.example.data.model.WooProductVariation
 import com.example.data.model.WordPressRootInfo
+import com.example.data.model.WpJwtTokenRequest
+import com.example.data.model.WpJwtTokenResponse
+import com.example.data.model.WpUserMeResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -67,6 +76,11 @@ interface WooCommerceApi {
         @Query("status") status: String = "approved"
     ): List<WooProductReview>
 
+    @POST("wp-json/wc/v3/products/reviews")
+    suspend fun createProductReview(
+        @Body request: WooProductReviewCreateRequest
+    ): WooProductReview
+
     @GET("wp-json/wc/v3/coupons")
     suspend fun findCouponByCode(
         @Query("code") code: String
@@ -84,6 +98,7 @@ interface WooCommerceApi {
     suspend fun getOrders(
         @Query("page") page: Int = 1,
         @Query("per_page") perPage: Int = 20,
+        @Query("customer") customerId: Long? = null,
         @Query("include") includeIds: String? = null,
         @Query("search") search: String? = null
     ): List<WooOrderResponse>
@@ -92,4 +107,40 @@ interface WooCommerceApi {
     suspend fun getOrderById(
         @Path("id") orderId: Long
     ): WooOrderResponse
+
+    // WooCommerce Customer Management
+    @POST("wp-json/wc/v3/customers")
+    suspend fun createCustomer(
+        @Body request: WooCustomerCreateRequest
+    ): WooCustomer
+
+    @GET("wp-json/wc/v3/customers")
+    suspend fun getCustomers(
+        @Query("email") email: String? = null,
+        @Query("search") search: String? = null,
+        @Query("role") role: String = "all"
+    ): List<WooCustomer>
+
+    @GET("wp-json/wc/v3/customers/{id}")
+    suspend fun getCustomerById(
+        @Path("id") customerId: Long
+    ): WooCustomer
+
+    @PUT("wp-json/wc/v3/customers/{id}")
+    suspend fun updateCustomer(
+        @Path("id") customerId: Long,
+        @Body request: WooCustomerUpdateRequest
+    ): WooCustomer
+}
+
+interface WordPressAuthApi {
+    @POST("wp-json/jwt-auth/v1/token")
+    suspend fun loginWithJwt(
+        @Body request: WpJwtTokenRequest
+    ): WpJwtTokenResponse
+
+    @GET("wp-json/wp/v2/users/me")
+    suspend fun getMeWithAuth(
+        @Header("Authorization") authorization: String
+    ): WpUserMeResponse
 }

@@ -3,9 +3,12 @@ package com.example.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.data.model.CustomerAddress
+import com.example.data.model.CustomerSession
 import com.example.data.model.StoreConfig
 import com.example.data.security.CryptoManager
 import com.example.ui.theme.ThemeMode
@@ -29,6 +32,19 @@ private data class StoredStoreEntry(
     val lastSyncedAt: Long = 0L
 )
 
+@Serializable
+private data class StoredCustomerEntry(
+    val storeUrl: String,
+    val customerId: Long,
+    val email: String,
+    val username: String,
+    val firstName: String = "",
+    val lastName: String = "",
+    val avatarUrl: String = "",
+    val encryptedJwtToken: String = "",
+    val billing: CustomerAddress = CustomerAddress()
+)
+
 class StorePreferences(private val context: Context) {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -38,11 +54,17 @@ class StorePreferences(private val context: Context) {
         val SAVED_STORES_JSON = stringPreferencesKey("saved_stores_json")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val RECENT_ORDER_IDS = stringPreferencesKey("recent_order_ids")
+        val CUSTOMER_SESSIONS_JSON = stringPreferencesKey("customer_sessions_json")
+        val HIDE_DEMO_CONTROLS = booleanPreferencesKey("hide_demo_controls")
     }
 
     val themeModeFlow: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
         val raw = prefs[Keys.THEME_MODE] ?: ThemeMode.SYSTEM.name
         ThemeMode.entries.firstOrNull { it.name == raw } ?: ThemeMode.SYSTEM
+    }
+
+    val hideDemoControlsFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.HIDE_DEMO_CONTROLS] ?: false
     }
 
     val savedStoresFlow: Flow<List<StoreConfig>> = context.dataStore.data.map { prefs ->
@@ -53,6 +75,11 @@ class StorePreferences(private val context: Context) {
         val activeUrl = prefs[Keys.ACTIVE_STORE_URL]
         val stores = decodeStores(prefs[Keys.SAVED_STORES_JSON])
         if (activeUrl.isNullOrBlank()) null else stores.firstOrNull { it.storeUrl == activeUrl }
+    }
+
+    val activeCustomerSessionFlow: Flow<CustomerSession?> = context.dataStore.data.map { prefs ->
+        val activeUrl = prefs[Keys.ACTIVE_STORE_URL] ?: return@map null
+        decodeCustomers(prefs[Keys.CUSTOMER_SESSIONS_JSON]).firstOrNull { it.storeUrl == activeUrl }
     }
 
     val recentOrderIdsFlow: Flow<Map<String, List<Long>>> = context.dataStore.data.map { prefs ->
@@ -84,6 +111,40 @@ class StorePreferences(private val context: Context) {
         }
     }
 
+    suspend fun saveCustomerSession(session: CustomerSession) {
+        context.dataStore.edit { prefs ->
+            val current = decodeCustomerEntries(prefs[Keys.CUSTOMER_SESSIONS_JSON]).toMutableList()
+            val entry = StoredCustomerEntry(
+                storeUrl = session.storeUrl,
+                customerId = session.customerId,
+                email = session.email,
+                username = session.username,
+                firstName = session.firstName,
+                lastName = session.lastName,
+                avatarUrl = session.avatarUrl,
+                encryptedJwtToken = if (session.jwtToken.isNotBlank()) CryptoManager.encrypt(session.jwtToken) else "",
+                billing = session.billing
+            )
+            val idx = current.indexOfFirst { it.storeUrl == session.storeUrl }
+            if (idx >= 0) current[idx] = entry else current.add(0, entry)
+            prefs[Keys.CUSTOMER_SESSIONS_JSON] = json.encodeToString(current)
+        }
+    }
+
+    suspend fun clearCustomerSession(storeUrl: String) {
+        context.dataStore.edit { prefs ->
+            val updated = decodeCustomerEntries(prefs[Keys.CUSTOMER_SESSIONS_JSON])
+                .filterNot { it.storeUrl == storeUrl }
+            prefs[Keys.CUSTOMER_SESSIONS_JSON] = json.encodeToString(updated)
+        }
+    }
+
+    suspend fun setHideDemoControls(hide: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.HIDE_DEMO_CONTROLS] = hide
+        }
+    }
+
     suspend fun switchActiveStore(storeUrl: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.ACTIVE_STORE_URL] = storeUrl
@@ -100,6 +161,9 @@ class StorePreferences(private val context: Context) {
         context.dataStore.edit { prefs ->
             val current = decodeEntries(prefs[Keys.SAVED_STORES_JSON]).filterNot { it.storeUrl == storeUrl }
             prefs[Keys.SAVED_STORES_JSON] = json.encodeToString(current)
+            val customers = decodeCustomerEntries(prefs[Keys.CUSTOMER_SESSIONS_JSON])
+                .filterNot { it.storeUrl == storeUrl }
+            prefs[Keys.CUSTOMER_SESSIONS_JSON] = json.encodeToString(customers)
             if (prefs[Keys.ACTIVE_STORE_URL] == storeUrl) {
                 if (current.isNotEmpty()) {
                     prefs[Keys.ACTIVE_STORE_URL] = current.first().storeUrl
@@ -158,6 +222,31 @@ class StorePreferences(private val context: Context) {
                     lastSyncedAt = entry.lastSyncedAt
                 )
             }
+        }
+    }
+
+    private fun decodeCustomerEntries(raw: String?): List<StoredCustomerEntry> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return try {
+            json.decodeFromString<List<StoredCustomerEntry>>(raw)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun decodeCustomers(raw: String?): List<CustomerSession> {
+        return decodeCustomerEntries(raw).map { entry ->
+            CustomerSession(
+                storeUrl = entry.storeUrl,
+                customerId = entry.customerId,
+                email = entry.email,
+                username = entry.username,
+                firstName = entry.firstName,
+                lastName = entry.lastName,
+                avatarUrl = entry.avatarUrl,
+                jwtToken = if (entry.encryptedJwtToken.isNotBlank()) CryptoManager.decrypt(entry.encryptedJwtToken) else "",
+                billing = entry.billing
+            )
         }
     }
 }

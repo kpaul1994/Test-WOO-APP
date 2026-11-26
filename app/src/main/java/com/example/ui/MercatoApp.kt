@@ -13,12 +13,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -51,7 +52,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.BuildConfig
 import com.example.R
+import com.example.data.model.CustomerSession
 import com.example.data.model.StoreConfig
 import com.example.ui.navigation.CartRoute
 import com.example.ui.navigation.CheckoutRoute
@@ -71,9 +74,11 @@ import com.example.ui.screens.ProductDetailScreen
 import com.example.ui.screens.WishlistScreen
 import com.example.ui.theme.MercatoTheme
 import com.example.ui.viewmodel.ActiveStoreState
+import com.example.ui.viewmodel.AuthViewModel
 import com.example.ui.viewmodel.CartCheckoutViewModel
 import com.example.ui.viewmodel.StoreConnectionViewModel
 import com.example.ui.viewmodel.StorefrontViewModel
+import kotlinx.coroutines.launch
 
 private data class TopLevelDestination(
     val route: Any,
@@ -88,12 +93,17 @@ private data class TopLevelDestination(
 fun MercatoApp(
     connectionViewModel: StoreConnectionViewModel,
     storefrontViewModel: StorefrontViewModel,
-    cartViewModel: CartCheckoutViewModel
+    cartViewModel: CartCheckoutViewModel,
+    authViewModel: AuthViewModel
 ) {
     val themeMode by connectionViewModel.themeMode.collectAsStateWithLifecycle()
+    val hideDemoControls by connectionViewModel.hideDemoControls.collectAsStateWithLifecycle()
     val storeState by connectionViewModel.storeState.collectAsStateWithLifecycle()
     val savedStores by connectionViewModel.savedStores.collectAsStateWithLifecycle()
     val connectForm by connectionViewModel.formState.collectAsStateWithLifecycle()
+
+    val activeCustomer by authViewModel.activeCustomer.collectAsStateWithLifecycle()
+    val authFormState by authViewModel.formState.collectAsStateWithLifecycle()
 
     val homeState by storefrontViewModel.homeState.collectAsStateWithLifecycle()
     val filterState by storefrontViewModel.filterState.collectAsStateWithLifecycle()
@@ -148,9 +158,13 @@ fun MercatoApp(
                     connectionViewModel = connectionViewModel,
                     storefrontViewModel = storefrontViewModel,
                     cartViewModel = cartViewModel,
+                    authViewModel = authViewModel,
+                    activeCustomer = activeCustomer,
+                    authFormState = authFormState,
                     connectForm = connectForm,
                     savedStores = savedStores,
                     themeMode = themeMode,
+                    hideDemoControls = hideDemoControls,
                     homeState = homeState,
                     filterState = filterState,
                     catalogState = catalogState,
@@ -174,9 +188,13 @@ private fun ConnectedStoreShell(
     connectionViewModel: StoreConnectionViewModel,
     storefrontViewModel: StorefrontViewModel,
     cartViewModel: CartCheckoutViewModel,
+    authViewModel: AuthViewModel,
+    activeCustomer: CustomerSession?,
+    authFormState: com.example.ui.viewmodel.AuthFormState,
     connectForm: com.example.ui.viewmodel.ConnectFormState,
     savedStores: List<StoreConfig>,
     themeMode: com.example.ui.theme.ThemeMode,
+    hideDemoControls: Boolean,
     homeState: com.example.ui.viewmodel.HomeUiState,
     filterState: com.example.ui.viewmodel.CatalogFilterState,
     catalogState: com.example.ui.viewmodel.CatalogUiState,
@@ -192,6 +210,9 @@ private fun ConnectedStoreShell(
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    val scope = rememberCoroutineScope()
+
+    val showDemoStoreControls = BuildConfig.SHOW_STORE_SETUP && !hideDemoControls
 
     val destinations = remember {
         listOf(
@@ -230,8 +251,8 @@ private fun ConnectedStoreShell(
             TopLevelDestination(
                 route = OrdersAndStoreRoute,
                 labelRes = R.string.nav_store,
-                selectedIcon = Icons.Filled.ReceiptLong,
-                unselectedIcon = Icons.Outlined.ReceiptLong,
+                selectedIcon = Icons.Filled.Person,
+                unselectedIcon = Icons.Outlined.Person,
                 testTag = "nav_orders",
                 matchClass = OrdersAndStoreRoute::class.java
             )
@@ -357,6 +378,7 @@ private fun ConnectedStoreShell(
                                 storeConfig = storeConfig,
                                 homeState = homeState,
                                 wishlistIds = wishlistIds,
+                                showDemoStoreControls = showDemoStoreControls,
                                 onRefresh = { storefrontViewModel.loadHomeFeed(refresh = true) },
                                 onOpenSearch = {
                                     storefrontViewModel.applyExploreNavigationFilter(null, null, false)
@@ -488,11 +510,32 @@ private fun ConnectedStoreShell(
                         composable<OrdersAndStoreRoute> {
                             OrdersAndStoreScreen(
                                 storeConfig = storeConfig,
+                                activeCustomer = activeCustomer,
+                                authFormState = authFormState,
                                 themeMode = themeMode,
+                                hideDemoControls = hideDemoControls,
                                 ordersState = ordersState,
+                                onToggleAuthMode = authViewModel::toggleAuthMode,
+                                onUpdateAuthForm = authViewModel::updateForm,
+                                onSubmitLogin = {
+                                    authViewModel.submitLogin {
+                                        cartViewModel.loadOrders()
+                                    }
+                                },
+                                onSubmitRegister = {
+                                    authViewModel.submitRegistration {
+                                        cartViewModel.loadOrders()
+                                    }
+                                },
+                                onUpdateCustomerProfile = authViewModel::updateProfile,
+                                onLogoutCustomer = {
+                                    authViewModel.logout()
+                                    cartViewModel.loadOrders()
+                                },
                                 onRefreshOrders = cartViewModel::loadOrders,
                                 onLookupOrder = cartViewModel::lookupOrderById,
                                 onThemeModeChange = connectionViewModel::setThemeMode,
+                                onSetHideDemoControls = connectionViewModel::setHideDemoControls,
                                 onRefreshStoreInfo = connectionViewModel::refreshActiveStoreInfo,
                                 onSwitchOrAddStore = {
                                     connectionViewModel.clearForm()
@@ -508,12 +551,21 @@ private fun ConnectedStoreShell(
                                 storeConfig = storeConfig,
                                 detailState = productDetailState,
                                 wishlistIds = wishlistIds,
+                                activeCustomer = activeCustomer,
                                 onBack = { navController.popBackStack() },
                                 onRetry = { storefrontViewModel.loadProductDetail(route.productId) },
                                 onSelectAttribute = storefrontViewModel::selectProductAttribute,
                                 onToggleWishlist = cartViewModel::toggleWishlist,
                                 onAddToCart = { product, variation, qty ->
                                     cartViewModel.addToCart(product, variation, qty)
+                                },
+                                onSubmitReview = { prodId, name, email, stars, text, cb ->
+                                    storefrontViewModel.submitProductReview(prodId, name, email, stars, text) { ok, msg ->
+                                        cb(ok, msg)
+                                        if (ok) {
+                                            scope.launch { snackbarHostState.showSnackbar(msg) }
+                                        }
+                                    }
                                 },
                                 onProductClick = { relatedId ->
                                     storefrontViewModel.loadProductDetail(relatedId)

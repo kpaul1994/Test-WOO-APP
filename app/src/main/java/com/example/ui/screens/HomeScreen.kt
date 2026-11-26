@@ -68,6 +68,7 @@ fun HomeScreen(
     storeConfig: StoreConfig,
     homeState: HomeUiState,
     wishlistIds: Set<Long>,
+    showDemoStoreControls: Boolean,
     onRefresh: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenCategory: (Long, String) -> Unit,
@@ -150,20 +151,22 @@ fun HomeScreen(
                                 )
                             }
                         }
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                        ) {
-                            IconButton(
-                                onClick = onSwitchStore,
-                                modifier = Modifier.testTag("home_switch_store_button")
+                        if (showDemoStoreControls) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.SwapHoriz,
-                                    contentDescription = "Switch WooCommerce store",
-                                    tint = MaterialTheme.colorScheme.onSurface
-                                )
+                                IconButton(
+                                    onClick = onSwitchStore,
+                                    modifier = Modifier.testTag("home_switch_store_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.SwapHoriz,
+                                        contentDescription = "Switch WooCommerce store",
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                     }

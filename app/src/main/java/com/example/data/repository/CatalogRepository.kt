@@ -146,4 +146,32 @@ class CatalogRepository {
             Result.failure(Exception(WooCommerceClient.formatNetworkError(t), t))
         }
     }
+
+    suspend fun submitProductReview(
+        config: StoreConfig,
+        productId: Long,
+        reviewerName: String,
+        reviewerEmail: String,
+        rating: Int,
+        reviewText: String
+    ): Result<WooProductReview> {
+        if (reviewerName.isBlank() || !reviewerEmail.contains('@') || reviewText.isBlank()) {
+            return Result.failure(IllegalArgumentException("Please provide your name, valid email, and review."))
+        }
+        return try {
+            val api = WooCommerceClient.createApi(config)
+            val created = api.createProductReview(
+                com.example.data.model.WooProductReviewCreateRequest(
+                    productId = productId,
+                    review = reviewText.trim(),
+                    reviewer = reviewerName.trim(),
+                    reviewerEmail = reviewerEmail.trim(),
+                    rating = rating.coerceIn(1, 5)
+                )
+            )
+            Result.success(created)
+        } catch (t: Throwable) {
+            Result.failure(Exception(WooCommerceClient.formatNetworkError(t), t))
+        }
+    }
 }

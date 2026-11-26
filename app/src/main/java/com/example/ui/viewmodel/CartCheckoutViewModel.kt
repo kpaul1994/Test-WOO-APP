@@ -12,6 +12,7 @@ import com.example.data.model.WooOrderResponse
 import com.example.data.model.WooPaymentGateway
 import com.example.data.model.WooProduct
 import com.example.data.model.WooProductVariation
+import com.example.data.repository.AuthRepository
 import com.example.data.repository.CartRepository
 import com.example.data.repository.StoreRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,7 +68,8 @@ sealed interface OrdersUiState {
 @OptIn(ExperimentalCoroutinesApi::class)
 class CartCheckoutViewModel(
     private val storeRepository: StoreRepository,
-    private val cartRepository: CartRepository
+    private val cartRepository: CartRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val activeStore = storeRepository.activeStore
@@ -208,6 +210,22 @@ class CartCheckoutViewModel(
         val store = activeStore.value ?: return
         _checkoutForm.update { it.copy(submitState = CheckoutUiState.Idle, isLoadingGateways = true) }
         viewModelScope.launch {
+            val customer = authRepository.activeCustomer.first()
+            if (customer != null) {
+                _checkoutForm.update { form ->
+                    form.copy(
+                        firstName = form.firstName.ifBlank { customer.billing.firstName.ifBlank { customer.firstName } },
+                        lastName = form.lastName.ifBlank { customer.billing.lastName.ifBlank { customer.lastName } },
+                        email = form.email.ifBlank { customer.email },
+                        phone = form.phone.ifBlank { customer.billing.phone },
+                        address1 = form.address1.ifBlank { customer.billing.address1 },
+                        city = form.city.ifBlank { customer.billing.city },
+                        state = form.state.ifBlank { customer.billing.state },
+                        postcode = form.postcode.ifBlank { customer.billing.postcode },
+                        country = form.country.ifBlank { customer.billing.country.ifBlank { "US" } }
+                    )
+                }
+            }
             cartRepository.fetchEnabledPaymentGateways(store).fold(
                 onSuccess = { gateways ->
                     val fallback = if (gateways.isEmpty()) {
@@ -279,6 +297,7 @@ class CartCheckoutViewModel(
 
         viewModelScope.launch {
             _checkoutForm.update { it.copy(submitState = CheckoutUiState.Submitting) }
+            val customer = authRepository.activeCustomer.first()
             val billing = WooBillingAddress(
                 firstName = form.firstName.trim(),
                 lastName = form.lastName.trim(),
@@ -296,7 +315,8 @@ class CartCheckoutViewModel(
                 billing = billing,
                 paymentGateway = gateway,
                 couponCode = _couponState.value.appliedCoupon?.code,
-                customerNote = form.customerNote
+                customerNote = form.customerNote,
+                customerId = customer?.customerId
             ).fold(
                 onSuccess = { order ->
                     _couponState.value = CartCouponState()
@@ -324,9 +344,14 @@ class CartCheckoutViewModel(
         val store = activeStore.value ?: return
         viewModelScope.launch {
             _ordersState.value = OrdersUiState.Loading
+            val customer = authRepository.activeCustomer.first()
             val savedMap = storeRepository.recentOrderIds.first()
             val ids = savedMap[store.storeUrl].orEmpty()
-            cartRepository.fetchOrders(store, ids).fold(
+            cartRepository.fetchOrders(
+                config = store,
+                customerId = customer?.customerId,
+                orderIds = ids
+            ).fold(
                 onSuccess = { orders ->
                     _ordersState.value = OrdersUiState.Success(orders)
                 },
@@ -359,11 +384,12 @@ class CartCheckoutViewModel(
 
     class Factory(
         private val storeRepository: StoreRepository,
-        private val cartRepository: CartRepository
+        private val cartRepository: CartRepository,
+        private val authRepository: AuthRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CartCheckoutViewModel(storeRepository, cartRepository) as T
+            return CartCheckoutViewModel(storeRepository, cartRepository, authRepository) as T
         }
     }
 }

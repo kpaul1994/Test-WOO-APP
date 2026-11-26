@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import com.example.di.AppContainer
 import com.example.ui.MercatoApp
+import com.example.ui.viewmodel.AuthViewModel
 import com.example.ui.viewmodel.CartCheckoutViewModel
 import com.example.ui.viewmodel.StoreConnectionViewModel
 import com.example.ui.viewmodel.StorefrontViewModel
@@ -29,7 +30,15 @@ class MainActivity : ComponentActivity() {
     private val cartViewModel: CartCheckoutViewModel by viewModels {
         CartCheckoutViewModel.Factory(
             appContainer.storeRepository,
-            appContainer.cartRepository
+            appContainer.cartRepository,
+            appContainer.authRepository
+        )
+    }
+
+    private val authViewModel: AuthViewModel by viewModels {
+        AuthViewModel.Factory(
+            appContainer.storeRepository,
+            appContainer.authRepository
         )
     }
 
@@ -40,7 +49,8 @@ class MainActivity : ComponentActivity() {
             MercatoApp(
                 connectionViewModel = connectionViewModel,
                 storefrontViewModel = storefrontViewModel,
-                cartViewModel = cartViewModel
+                cartViewModel = cartViewModel,
+                authViewModel = authViewModel
             )
         }
     }

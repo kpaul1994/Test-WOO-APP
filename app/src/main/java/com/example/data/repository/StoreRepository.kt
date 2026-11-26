@@ -17,6 +17,7 @@ class StoreRepository(
     val activeStore: Flow<StoreConfig?> = preferences.activeStoreFlow
     val savedStores: Flow<List<StoreConfig>> = preferences.savedStoresFlow
     val themeMode: Flow<ThemeMode> = preferences.themeModeFlow
+    val hideDemoControls: Flow<Boolean> = preferences.hideDemoControlsFlow
     val recentOrderIds: Flow<Map<String, List<Long>>> = preferences.recentOrderIdsFlow
 
     suspend fun testAndConnectStore(
@@ -88,6 +89,10 @@ class StoreRepository(
 
     suspend fun setThemeMode(mode: ThemeMode) {
         preferences.setThemeMode(mode)
+    }
+
+    suspend fun setHideDemoControls(hide: Boolean) {
+        preferences.setHideDemoControls(hide)
     }
 
     suspend fun recordPlacedOrder(storeUrl: String, orderId: Long) {

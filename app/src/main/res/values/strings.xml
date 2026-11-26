@@ -16,7 +16,7 @@
     <string name="nav_explore">Explore</string>
     <string name="nav_saved">Saved</string>
     <string name="nav_bag">Bag</string>
-    <string name="nav_store">Orders</string>
+    <string name="nav_store">Account</string>
     <string name="cd_back">Navigate back</string>
     <string name="cd_wishlist">Toggle wishlist</string>
     <string name="cd_search">Search products</string>

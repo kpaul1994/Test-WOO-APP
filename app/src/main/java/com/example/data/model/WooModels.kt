@@ -117,6 +117,15 @@ data class WooProductReview(
 )
 
 @JsonClass(generateAdapter = true)
+data class WooProductReviewCreateRequest(
+    @Json(name = "product_id") val productId: Long,
+    @Json(name = "review") val review: String,
+    @Json(name = "reviewer") val reviewer: String,
+    @Json(name = "reviewer_email") val reviewerEmail: String,
+    @Json(name = "rating") val rating: Int
+)
+
+@JsonClass(generateAdapter = true)
 data class WooCoupon(
     @Json(name = "id") val id: Long,
     @Json(name = "code") val code: String = "",
@@ -140,27 +149,27 @@ data class WooPaymentGateway(
 
 @JsonClass(generateAdapter = true)
 data class WooBillingAddress(
-    @Json(name = "first_name") val firstName: String,
-    @Json(name = "last_name") val lastName: String,
-    @Json(name = "address_1") val address1: String,
+    @Json(name = "first_name") val firstName: String = "",
+    @Json(name = "last_name") val lastName: String = "",
+    @Json(name = "address_1") val address1: String = "",
     @Json(name = "address_2") val address2: String = "",
-    @Json(name = "city") val city: String,
+    @Json(name = "city") val city: String = "",
     @Json(name = "state") val state: String = "",
-    @Json(name = "postcode") val postcode: String,
+    @Json(name = "postcode") val postcode: String = "",
     @Json(name = "country") val country: String = "US",
-    @Json(name = "email") val email: String,
-    @Json(name = "phone") val phone: String
+    @Json(name = "email") val email: String = "",
+    @Json(name = "phone") val phone: String = ""
 )
 
 @JsonClass(generateAdapter = true)
 data class WooShippingAddress(
-    @Json(name = "first_name") val firstName: String,
-    @Json(name = "last_name") val lastName: String,
-    @Json(name = "address_1") val address1: String,
+    @Json(name = "first_name") val firstName: String = "",
+    @Json(name = "last_name") val lastName: String = "",
+    @Json(name = "address_1") val address1: String = "",
     @Json(name = "address_2") val address2: String = "",
-    @Json(name = "city") val city: String,
+    @Json(name = "city") val city: String = "",
     @Json(name = "state") val state: String = "",
-    @Json(name = "postcode") val postcode: String,
+    @Json(name = "postcode") val postcode: String = "",
     @Json(name = "country") val country: String = "US"
 )
 
@@ -178,6 +187,7 @@ data class WooOrderCouponLineRequest(
 
 @JsonClass(generateAdapter = true)
 data class WooOrderCreateRequest(
+    @Json(name = "customer_id") val customerId: Long? = null,
     @Json(name = "payment_method") val paymentMethod: String,
     @Json(name = "payment_method_title") val paymentMethodTitle: String,
     @Json(name = "set_paid") val setPaid: Boolean = false,
@@ -201,6 +211,7 @@ data class WooOrderLineItemResponse(
 @JsonClass(generateAdapter = true)
 data class WooOrderResponse(
     @Json(name = "id") val id: Long,
+    @Json(name = "customer_id") val customerId: Long = 0,
     @Json(name = "number") val number: String = "",
     @Json(name = "order_key") val orderKey: String = "",
     @Json(name = "status") val status: String = "pending",
@@ -214,4 +225,56 @@ data class WooOrderResponse(
     @Json(name = "payment_url") val paymentUrl: String? = null,
     @Json(name = "line_items") val lineItems: List<WooOrderLineItemResponse> = emptyList(),
     @Json(name = "billing") val billing: WooBillingAddress? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class WooCustomer(
+    @Json(name = "id") val id: Long,
+    @Json(name = "email") val email: String = "",
+    @Json(name = "first_name") val firstName: String = "",
+    @Json(name = "last_name") val lastName: String = "",
+    @Json(name = "role") val role: String = "customer",
+    @Json(name = "username") val username: String = "",
+    @Json(name = "avatar_url") val avatarUrl: String = "",
+    @Json(name = "billing") val billing: WooBillingAddress? = null,
+    @Json(name = "shipping") val shipping: WooShippingAddress? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class WooCustomerCreateRequest(
+    @Json(name = "email") val email: String,
+    @Json(name = "first_name") val firstName: String,
+    @Json(name = "last_name") val lastName: String,
+    @Json(name = "username") val username: String,
+    @Json(name = "password") val password: String
+)
+
+@JsonClass(generateAdapter = true)
+data class WooCustomerUpdateRequest(
+    @Json(name = "first_name") val firstName: String,
+    @Json(name = "last_name") val lastName: String,
+    @Json(name = "billing") val billing: WooBillingAddress,
+    @Json(name = "shipping") val shipping: WooShippingAddress
+)
+
+@JsonClass(generateAdapter = true)
+data class WpJwtTokenRequest(
+    @Json(name = "username") val username: String,
+    @Json(name = "password") val password: String
+)
+
+@JsonClass(generateAdapter = true)
+data class WpJwtTokenResponse(
+    @Json(name = "token") val token: String? = null,
+    @Json(name = "user_email") val userEmail: String? = null,
+    @Json(name = "user_nicename") val userNicename: String? = null,
+    @Json(name = "user_display_name") val userDisplayName: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class WpUserMeResponse(
+    @Json(name = "id") val id: Long = 0,
+    @Json(name = "name") val name: String = "",
+    @Json(name = "slug") val slug: String = "",
+    @Json(name = "email") val email: String? = null
 )

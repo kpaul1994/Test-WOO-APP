@@ -61,6 +61,9 @@ class StoreConnectionViewModel(
     val themeMode: StateFlow<ThemeMode> = storeRepository.themeMode
         .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.SYSTEM)
 
+    val hideDemoControls: StateFlow<Boolean> = storeRepository.hideDemoControls
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private val _formState = MutableStateFlow(ConnectFormState())
     val formState: StateFlow<ConnectFormState> = _formState.asStateFlow()
 
@@ -164,6 +167,12 @@ class StoreConnectionViewModel(
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             storeRepository.setThemeMode(mode)
+        }
+    }
+
+    fun setHideDemoControls(hide: Boolean) {
+        viewModelScope.launch {
+            storeRepository.setHideDemoControls(hide)
         }
     }
 
