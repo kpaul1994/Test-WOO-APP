@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Mercato</string>
+    <string name="connect_store_headline">Connect Your WooCommerce Store</string>
+    <string name="connect_store_subtitle">Plug in your store URL and REST API credentials to launch a fast, modern mobile storefront.</string>
+    <string name="label_store_url">Store URL</string>
+    <string name="hint_store_url">https://yourstore.com</string>
+    <string name="label_consumer_key">Consumer Key</string>
+    <string name="hint_consumer_key">ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</string>
+    <string name="label_consumer_secret">Consumer Secret</string>
+    <string name="hint_consumer_secret">cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</string>
+    <string name="label_store_name_optional">Display Name (optional)</string>
+    <string name="hint_store_name_optional">Auto-detected if left blank</string>
+    <string name="action_connect_store">Test &amp; Connect Store</string>
+    <string name="action_api_guide">How to generate WooCommerce API keys</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_explore">Explore</string>
+    <string name="nav_saved">Saved</string>
+    <string name="nav_bag">Bag</string>
+    <string name="nav_store">Orders</string>
+    <string name="cd_back">Navigate back</string>
+    <string name="cd_wishlist">Toggle wishlist</string>
+    <string name="cd_search">Search products</string>
+    <string name="cd_filters">Filter and sort</string>
+    <string name="cd_store_settings">Store settings</string>
+    <string name="empty_bag_title">Your bag is empty</string>
+    <string name="empty_bag_subtitle">Discover curated products from your connected WooCommerce catalog and add items to your bag.</string>
+    <string name="action_browse_catalog">Browse Catalog</string>
+</resources>
